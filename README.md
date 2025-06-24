@@ -1,18 +1,24 @@
 # letWordsGoAway
 - [letWordsGoAway](#letwordsgoaway)
 - [记录](#记录)
-    - [6.22上午：](#622上午)
-    - [6.23下午：](#623下午)
+  - [6.22上午：](#622上午)
+  - [6.23下午：](#623下午)
+      - [完成功能：](#完成功能)
       - [学习记录：](#学习记录)
         - [index.html 代码详解](#indexhtml-代码详解)
         - [表单 \<form\> 知识扩展：](#表单-form-知识扩展)
         - [result.html 代码详解](#resulthtml-代码详解)
         - [document对象知识扩展：](#document对象知识扩展)
+  - [6.24下午：](#624下午)
+      - [完成功能：](#完成功能-1)
+      - [学习记录：](#学习记录-1)
+        - [result.html 更改代码详解：](#resulthtml-更改代码详解)
 
 # 记录
-### 6.22上午：
+## 6.22上午：
 * 重新找到加速器连上github，发现火狐浏览器对证书的检测比edge要严格（在火狐浏览器用wattToolkit加速github要手动安装证书）
-### 6.23下午：
+## 6.23下午：
+#### 完成功能：
 * 主体功能：
   * 主页面，提供一段文字，然后将其显示在副页面中
   * 副页面，检测光标位置，当光标靠近时移动文字
@@ -148,3 +154,94 @@ document  是JavaScript中的一个全局对象，它表示当前加载的HTML�
     event.returnValue = 'Are you sure you want to leave?';
   });
   ```
+## 6.24下午：
+#### 完成功能：
+* 将一段文字平铺到页面
+* 刚进入页面的淡出效果
+* 鼠标附近的透明度变化效果
+* 鼠标点击扩大半径效果
+#### 学习记录：
+##### result.html 更改代码详解：
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <link rel="stylesheet" href="result.css"> -->
+    <script src="result-anim.js"></script>
+    <title>显示结果</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* 允许滚动 */
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* 顶部对齐 */
+        }
+        .char-container { // 设置字符容器，用于平铺文字
+            display: grid; // 使用网格模式，通过设置网格间距完成平铺
+            width: 100vw;
+            grid-gap: 10px;
+            justify-content: center;
+            align-items: start;
+        }
+        .char { // 设置字体样式
+            font-size: 24px; // 字体大小
+            font-family: Arial, sans-serif; // font
+            color: #333; // 字体颜色
+            text-align: center; // 对齐方式
+            display: flex; // flex对齐模式
+            justify-content: center; // 主轴居中
+            align-items: center; // 交叉轴居中
+        }
+    </style>
+</head>
+<body>
+    <div class="char-container" id="charContainer"></div> // 创建一个字符容器，用于放置字符
+    <script>
+        // 获取URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const userInput = urlParams.get('userInput') || ''; // 默认为空字符
+
+        // 将用户输入的文本拆分成单个字符
+        const characters = userInput.split('');
+
+        // 获取字符容器
+        const charContainer = document.getElementById('charContainer');
+
+        // 固定字体大小
+        const fontSize = 24; // px
+        // 估算每个字符的宽高（可根据字体微调）
+        const charWidth = fontSize * 0.6; // Arial 字体大致宽高比
+        const charHeight = fontSize * 1.2;
+
+        function render() {
+            charContainer.innerHTML = '';
+            const containerWidth = window.innerWidth;
+            // 计算一行能放多少个字符
+            const charWidthWithGap = charWidth + 10; // 10px gap
+            const cols = Math.floor(containerWidth / charWidthWithGap) || 1;
+            charContainer.style.gridTemplateColumns = `repeat(${cols}, ${charWidth}px)`;
+            charContainer.style.gridGap = `10px`;
+            // 把字符一个一个塞到div里面并作为 charElement 容器的子节点
+            characters.forEach(char => {
+                const charElement = document.createElement('div');
+                charElement.classList.add('char');
+                charElement.textContent = char;
+                charContainer.appendChild(charElement);
+            });
+        }
+
+        // 初始渲染
+        render();
+        // 窗口大小变化时重新渲染
+        window.addEventListener('resize', render);
+    </script>
+</body>
+</html>
+```
