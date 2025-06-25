@@ -1,4 +1,5 @@
 # letWordsGoAway
+将index.html、result.html、result-anim.js放到同一个文件下，然后访问index.html，就可以看到效果了！
 - [letWordsGoAway](#letwordsgoaway)
 - [记录](#记录)
   - [6.22上午：](#622上午)
