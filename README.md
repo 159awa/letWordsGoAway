@@ -13,6 +13,10 @@
       - [完成功能：](#完成功能-1)
       - [学习记录：](#学习记录-1)
         - [result.html 更改代码详解：](#resulthtml-更改代码详解)
+  - [6.25下午：](#625下午)
+      - [学习记录：](#学习记录-2)
+        - [详细分析result.html中的逻辑实现：](#详细分析resulthtml中的逻辑实现)
+        - [各种交互、动画效果实现：](#各种交互动画效果实现)
 
 # 记录
 ## 6.22上午：
@@ -244,4 +248,155 @@ document  是JavaScript中的一个全局对象，它表示当前加载的HTML�
     </script>
 </body>
 </html>
+```
+## 6.25下午：
+#### 学习记录：
+##### 详细分析result.html中的逻辑实现：
+```html
+<script>
+        // 获取URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const userInput = urlParams.get('userInput') || ''; // 默认为空字符
+        // 将用户输入的文本拆分成单个字符
+        const characters = userInput.split('');
+        // 获取字符容器
+        const charContainer = document.getElementById('charContainer');
+        // 固定字体大小
+        const fontSize = 24; // px
+        // 估算每个字符的宽高（可根据字体微调）
+        const charWidth = fontSize * 0.6; // Arial 字体大致宽高比
+        const charHeight = fontSize * 1.2;
+        function render() {
+            charContainer.innerHTML = '';
+            const containerWidth = window.innerWidth;
+            // 计算一行能放多少个字符
+            const charWidthWithGap = charWidth + 10; // 10px gap
+            const cols = Math.floor(containerWidth / charWidthWithGap) || 1;
+            charContainer.style.gridTemplateColumns = `repeat(${cols}, ${charWidth}px)`;
+            charContainer.style.gridGap = `10px`;
+            // 把字符一个一个塞到div里面并作为 charElement 容器的子节点
+            characters.forEach(char => {
+                const charElement = document.createElement('div');
+                charElement.classList.add('char');
+                charElement.textContent = char;
+                charContainer.appendChild(charElement);
+            });
+        }
+        // 初始渲染
+        render();
+        // 窗口大小变化时重新渲染
+        window.addEventListener('resize', render);
+    </script>
+```
+* 获取所有文本和之前所用的方法是一样的，用 URLSearchParams(window.location.search) 获取到get传递的参数，然后用 .get("userInput") 得到具体参数。这里给文本默认为空
+* .split('') 方法用于拆分单个字符
+* 把charContainer对象找出来，后面要用
+* 渲染函数：
+  * window.innerWidth 方法直接获取窗口宽度
+  * 用字体宽度加上一定的字间距，然后计算一行能放多少字符
+  * 设置charContainer对象：.style.gridTemplateColunms 设置列格式，用 repeat()进行设置。其中第一个参数 ${cols} 指重复次数，即列数；第二个参数 ${charWidth} 表示每一列的宽度。**这样调整了容器的格式，后面只需要把文字再挨个放回来就行了**
+  * 对每一个字符创建一个 div，然后用 .classList.add() 方法给div一个类名char，**这样就能应用预设的char的css样式**。再把字符放到div里，然后把div作为子元素加到容器里。
+* 初始调用一次渲染函数，然后每当检测到窗口大小变化时重新渲染一次
+##### 各种交互、动画效果实现：
+```js
+window.onload = function() {
+    const container = document.getElementById('charContainer');
+    const chars = Array.from(container.children); // 拿到所有字，放到数组里
+    const baseRadius = 200; // 初始半径
+    let radius = baseRadius; // 当前半径初始化为初始半径
+    let globalOpacity = 1; // 整体透明度
+
+    let lastMouseX = window.innerWidth / 2;
+    let lastMouseY = window.innerHeight / 2;
+
+    // 计算并设置每个字符的透明度
+    function updateAllOpacity(mouseX, mouseY) {
+        chars.forEach(char => {
+            const rect = char.getBoundingClientRect(); // rect是一个包含元素左边界距视口的水平距离、上边界距视口的垂直距离；元素宽度、高度的对象
+            const charX = rect.left + rect.width / 2;
+            const charY = rect.top + rect.height / 2;
+            // 上面两行计算元素的中心点，用于后续计算距离
+            const dist = Math.sqrt((charX - mouseX) ** 2 + (charY - mouseY) ** 2);
+            let opacity;
+            if (dist <= radius) {
+                const t = dist / radius; // 用于做到渐变效果
+                opacity = globalOpacity * t + (1 - t) * 1;
+            } else {
+                opacity = globalOpacity;
+            }
+            char.style.opacity = opacity; // 可以直接对文字的透明度进行设置
+        });
+    }
+
+    // 整体淡出动画
+    function startGlobalFade() {
+        const duration = 5000; // 5秒
+        const start = Date.now(); // 记录动画的开始时间为当前时间戳
+        function fade() {
+            const elapsed = Date.now() - start; // 计算从动画开始到当前时间经过的时间
+            globalOpacity = Math.max(1 - elapsed / duration, 0); // 通过上一行得到的与时间有关的线性变量，计算透明度
+            updateAllOpacity(lastMouseX, lastMouseY); // 保持鼠标相关的透明度逻辑正常运转
+            if (globalOpacity > 0) {
+                requestAnimationFrame(fade); // 如果透明度大于0，则递归运行，达成动画效果
+            }
+        }
+        fade();
+    }
+
+    // 鼠标移动时更新，添加鼠标移动事件，然后更新鼠标坐标并更新透明度相关信息
+    document.addEventListener('mousemove', e => {
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        updateAllOpacity(lastMouseX, lastMouseY);
+    });
+
+    // 半径缩小动画
+    let shrinking = false; // 当前半径是否在缩小的标志
+    function shrinkRadius() {
+        if (radius > baseRadius) {
+            shrinking = true;
+            radius -= 5; // 缩小速度，可调整
+            if (radius < baseRadius) radius = baseRadius;
+            // 缩小逻辑
+            updateAllOpacity(lastMouseX, lastMouseY);
+            // 更改半径伴随透明度更改
+            requestAnimationFrame(shrinkRadius);
+            // 递归调用，将半径缩小至最小
+            // requestAnimationFrame 是一个浏览器API，用于调度下一次重绘，确保动画平滑且性能优化。
+        } else {
+            shrinking = false;
+        }
+    }
+
+    // 鼠标点击事件（左键、右键）
+    document.addEventListener('mousedown', function(e) {
+      // 这里将事件的结果直接给了匿名方法，即直接给到参数e，然后匿名方法根据参数e做修改
+      // 修改都很简单
+        if (e.button === 0 || e.button === 2) { // 左键或右键
+            radius += 150; // 每次点击增大多少，可调整
+            if (radius > 2000) {
+                radius = 2000
+            }
+            updateAllOpacity(lastMouseX, lastMouseY);
+        }
+    });
+
+    // 鼠标松开时开始缩小
+    document.addEventListener('mouseup', function(e) {
+        if (!shrinking) {
+            shrinkRadius();
+        }
+    });
+
+    // 防止右键弹出菜单
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+
+    // 初始渲染
+    updateAllOpacity(lastMouseX, lastMouseY);
+
+    // 启动整体淡出动画
+    startGlobalFade();
+};
 ```
