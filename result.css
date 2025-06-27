@@ -1,3 +1,4 @@
+/* 做淡出效果的一个尝试，可以实现效果，但貌似不方便后续继续操作 */
 .char-container {
     animation: fadeout 5s linear forwards;
 }
